@@ -27,6 +27,8 @@ package jdk.graal.compiler.jtt.except;
 import static java.lang.classfile.ClassFile.ACC_PUBLIC;
 import static java.lang.constant.ConstantDescs.CD_Object;
 import static java.lang.constant.ConstantDescs.CD_int;
+import static java.lang.constant.ConstantDescs.INIT_NAME;
+import static java.lang.constant.ConstantDescs.MTD_void;
 
 import java.lang.classfile.ClassFile;
 import java.lang.constant.ClassDesc;
@@ -233,40 +235,35 @@ public class UntrustedInterfaces extends JTTTest {
 
             return ClassFile.of().build(ClassDesc.of(className), classBuilder -> classBuilder
                             .withSuperclass(classPill)
-                            .withMethod("<init>", MD_VOID, ACC_PUBLIC, methodBuilder -> methodBuilder
-                                            .withCode(codeBuilder -> codeBuilder
-                                                            .aload(0)
-                                                            .invokespecial(classPill, "<init>", MD_VOID)
-                                                            .return_()))
-                            .withMethod("setField", MD_VOID, ACC_PUBLIC, methodBuilder -> methodBuilder
-                                            .withCode(codeBuilder -> codeBuilder
-                                                            .aload(0)
-                                                            .new_(CD_Object)
-                                                            .dup()
-                                                            .invokespecial(CD_Object, "<init>", MD_VOID)
-                                                            .putfield(classPill, "field", classTestInterface)
-                                                            .return_()))
-                            .withMethod("setStaticField", MD_VOID, ACC_PUBLIC, methodBuilder -> methodBuilder
-                                            .withCode(codeBuilder -> codeBuilder
-                                                            .new_(CD_Object)
-                                                            .dup()
-                                                            .invokespecial(CD_Object, "<init>", MD_VOID)
-                                                            .putstatic(classPill, "staticField", classTestInterface)
-                                                            .return_()))
-                            .withMethod("callMe", MethodTypeDesc.of(CD_int, cd(CallBack.class)), ACC_PUBLIC, methodBuilder -> methodBuilder
-                                            .withCode(codeBuilder -> codeBuilder
-                                                            .aload(1)
-                                                            .new_(CD_Object)
-                                                            .dup()
-                                                            .invokespecial(CD_Object, "<init>", MD_VOID)
-                                                            .invokeinterface(cd(CallBack.class), "callBack", MethodTypeDesc.of(CD_int, classTestInterface))
-                                                            .ireturn()))
-                            .withMethod("get", MethodTypeDesc.of(classTestInterface), ACC_PUBLIC, methodBuilder -> methodBuilder
-                                            .withCode(codeBuilder -> codeBuilder
-                                                            .new_(CD_Object)
-                                                            .dup()
-                                                            .invokespecial(CD_Object, "<init>", MD_VOID)
-                                                            .areturn())));
+                            .withMethodBody(INIT_NAME, MTD_void, ACC_PUBLIC, b -> b
+                                            .aload(0)
+                                            .invokespecial(classPill, INIT_NAME, MTD_void)
+                                            .return_())
+                            .withMethodBody("setField", MTD_void, ACC_PUBLIC, b -> b
+                                            .aload(0)
+                                            .new_(CD_Object)
+                                            .dup()
+                                            .invokespecial(CD_Object, INIT_NAME, MTD_void)
+                                            .putfield(classPill, "field", classTestInterface)
+                                            .return_())
+                            .withMethodBody("setStaticField", MTD_void, ACC_PUBLIC, b -> b
+                                            .new_(CD_Object)
+                                            .dup()
+                                            .invokespecial(CD_Object, INIT_NAME, MTD_void)
+                                            .putstatic(classPill, "staticField", classTestInterface)
+                                            .return_())
+                            .withMethodBody("callMe", MethodTypeDesc.of(CD_int, cd(CallBack.class)), ACC_PUBLIC, b -> b
+                                            .aload(1)
+                                            .new_(CD_Object)
+                                            .dup()
+                                            .invokespecial(CD_Object, INIT_NAME, MTD_void)
+                                            .invokeinterface(cd(CallBack.class), "callBack", MethodTypeDesc.of(CD_int, classTestInterface))
+                                            .ireturn())
+                            .withMethodBody("get", MethodTypeDesc.of(classTestInterface), ACC_PUBLIC, b -> b
+                                            .new_(CD_Object)
+                                            .dup()
+                                            .invokespecial(CD_Object, INIT_NAME, MTD_void)
+                                            .areturn()));
         }
     }
 }

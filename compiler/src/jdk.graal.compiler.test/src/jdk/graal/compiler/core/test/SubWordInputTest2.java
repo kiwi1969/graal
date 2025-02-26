@@ -86,14 +86,14 @@ public class SubWordInputTest2 extends GraalCompilerTest implements CustomizedBy
         MethodTypeDesc getMethodTypeDesc = MethodTypeDesc.of(CD_boolean, targetType);
 
         return ClassFile.of().build(thisClass, classBuilder -> classBuilder
-                        .withMethod(GET, getMethodTypeDesc, ACC_PUBLIC_STATIC, methodBuilder -> methodBuilder
-                                        .withCode(codeBuilder -> codeBuilder
-                                                        .iload(0)
-                                                        .ifThenElse(Opcode.IFGE, b -> b.iconst_0().ireturn(), b -> b.iconst_1().ireturn())))
-                        .withMethod(WRAPPER, MethodTypeDesc.of(CD_boolean, CD_int), ACC_PUBLIC_STATIC, methodBuilder -> methodBuilder
-                                        .withCode(codeBuilder -> codeBuilder
-                                                        .iload(0)
-                                                        .invokestatic(thisClass, GET, getMethodTypeDesc)
-                                                        .ireturn())));
+                        .withMethodBody(GET, getMethodTypeDesc, ACC_PUBLIC_STATIC, b -> b
+                                        .iload(0)
+                                        .ifThenElse(Opcode.IFGE,
+                                                        thenBlock -> thenBlock.iconst_0().ireturn(),
+                                                        elseBlock -> elseBlock.iconst_1().ireturn()))
+                        .withMethodBody(WRAPPER, MethodTypeDesc.of(CD_boolean, CD_int), ACC_PUBLIC_STATIC, b -> b
+                                        .iload(0)
+                                        .invokestatic(thisClass, GET, getMethodTypeDesc)
+                                        .ireturn()));
     }
 }

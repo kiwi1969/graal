@@ -51,21 +51,19 @@ public class TwoSlotMarkerClearingTest extends GraalCompilerTest implements Cust
     @Override
     public byte[] generateClass(String className) {
         return ClassFile.of().build(ClassDesc.of(className), classBuilder -> classBuilder
-                        .withMethod("t1", MethodTypeDesc.of(CD_int, CD_long, CD_int, CD_int), ACC_PUBLIC_STATIC, methodBuilder -> methodBuilder
-                                        .withCode(codeBuilder -> codeBuilder
-                                                        .iload(2)
-                                                        .istore(0)
-                                                        .iload(0)
-                                                        .ifThenElse(Opcode.IFLT,
-                                                                        b -> b.iload(0).ireturn(),
-                                                                        b -> b.iload(3).ireturn())))
-                        .withMethod("t2", MethodTypeDesc.of(CD_long, CD_int, CD_long, CD_int, CD_long), ACC_PUBLIC_STATIC, methodBuilder -> methodBuilder
-                                        .withCode(codeBuilder -> codeBuilder
-                                                        .lload(1)
-                                                        .lstore(0)
-                                                        .iload(3)
-                                                        .ifThenElse(Opcode.IFLT,
-                                                                        b -> b.lload(0).lreturn(),
-                                                                        b -> b.lload(4).lreturn()))));
+                        .withMethodBody("t1", MethodTypeDesc.of(CD_int, CD_long, CD_int, CD_int), ACC_PUBLIC_STATIC, b -> b
+                                        .iload(2)
+                                        .istore(0)
+                                        .iload(0)
+                                        .ifThenElse(Opcode.IFLT,
+                                                        thenBlock -> thenBlock.iload(0).ireturn(),
+                                                        elseBlock -> elseBlock.iload(3).ireturn()))
+                        .withMethodBody("t2", MethodTypeDesc.of(CD_long, CD_int, CD_long, CD_int, CD_long), ACC_PUBLIC_STATIC, b -> b
+                                        .lload(1)
+                                        .lstore(0)
+                                        .iload(3)
+                                        .ifThenElse(Opcode.IFLT,
+                                                        thenBlock -> thenBlock.lload(0).lreturn(),
+                                                        elseBlock -> elseBlock.lload(4).lreturn())));
     }
 }

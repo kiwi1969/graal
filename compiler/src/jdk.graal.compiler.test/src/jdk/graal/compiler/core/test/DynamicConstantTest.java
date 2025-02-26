@@ -24,18 +24,9 @@
  */
 package jdk.graal.compiler.core.test;
 
-import static java.lang.constant.ConstantDescs.CD_boolean;
-import static java.lang.constant.ConstantDescs.CD_byte;
-import static java.lang.constant.ConstantDescs.CD_char;
-import static java.lang.constant.ConstantDescs.CD_double;
-import static java.lang.constant.ConstantDescs.CD_float;
-import static java.lang.constant.ConstantDescs.CD_int;
-import static java.lang.constant.ConstantDescs.CD_long;
-import static java.lang.constant.ConstantDescs.CD_short;
-import static java.lang.constant.ConstantDescs.CD_void;
-
 import java.lang.classfile.ClassFile;
 import java.lang.classfile.CodeBuilder;
+import java.lang.classfile.TypeKind;
 import java.lang.constant.ClassDesc;
 import java.lang.constant.ConstantDescs;
 import java.lang.constant.DirectMethodHandleDesc.Kind;
@@ -128,8 +119,7 @@ public class DynamicConstantTest extends GraalCompilerTest {
         @Override
         public byte[] generateClass(String className) {
             return ClassFile.of().build(ClassDesc.of(className), classBuilder -> classBuilder
-                            .withMethod("run", MethodTypeDesc.of(type), ACC_PUBLIC_STATIC, methodBuilder -> methodBuilder
-                                            .withCode(this::generate)));
+                            .withMethodBody("run", MethodTypeDesc.of(type), ACC_PUBLIC_STATIC, this::generate));
         }
 
         private void generate(CodeBuilder b) {
@@ -144,13 +134,11 @@ public class DynamicConstantTest extends GraalCompilerTest {
                 // Class<?> type)
                 String sig = "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/Class;)" + desc;
                 var condy = DynamicConstantDesc.ofNamed(MethodHandleDesc.of(Kind.STATIC, outerClass, getter + "BSM", sig), "consnt", type);
-                b.ldc(condy);
-                generateReturn(b);
+                b.ldc(condy).return_(TypeKind.from(type));
             } else if (condyType == CondyType.CALL_INDIRECT_BSM) {
                 // Example: int DynamicConstantTest.getInt()
                 var condy = DynamicConstantDesc.ofNamed(ConstantDescs.BSM_INVOKE, "consnt", type, MethodHandleDesc.of(Kind.STATIC, outerClass, getter, "()" + desc));
-                b.ldc(condy);
-                generateReturn(b);
+                b.ldc(condy).return_(TypeKind.from(type));
             } else {
                 assert condyType == CondyType.CALL_INDIRECT_WITH_ARGS_BSM;
                 // Example: int DynamicConstantTest.getInt()
@@ -158,32 +146,7 @@ public class DynamicConstantTest extends GraalCompilerTest {
                 // Example: int DynamicConstantTest.getInt(int v1, int v2)
                 var condy2 = DynamicConstantDesc.ofNamed(ConstantDescs.BSM_INVOKE, "consnt2", type, MethodHandleDesc.of(Kind.STATIC, outerClass, getter, "(" + desc + desc + ")" + desc), condy1,
                                 condy1);
-                b.ldc(condy2);
-                generateReturn(b);
-            }
-        }
-
-        private void generateReturn(CodeBuilder b) {
-            if (CD_boolean.equals(type)) {
-                b.ireturn();
-            } else if (CD_byte.equals(type)) {
-                b.ireturn();
-            } else if (CD_short.equals(type)) {
-                b.ireturn();
-            } else if (CD_char.equals(type)) {
-                b.ireturn();
-            } else if (CD_int.equals(type)) {
-                b.ireturn();
-            } else if (CD_long.equals(type)) {
-                b.lreturn();
-            } else if (CD_float.equals(type)) {
-                b.freturn();
-            } else if (CD_double.equals(type)) {
-                b.dreturn();
-            } else if (CD_void.equals(type)) {
-                b.return_();
-            } else {
-                b.areturn();
+                b.ldc(condy2).return_(TypeKind.from(type));
             }
         }
     }

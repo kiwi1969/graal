@@ -28,6 +28,8 @@ import static java.lang.classfile.ClassFile.ACC_PUBLIC;
 import static java.lang.classfile.ClassFile.JAVA_5_VERSION;
 import static java.lang.constant.ConstantDescs.CD_Object;
 import static java.lang.constant.ConstantDescs.CD_long;
+import static java.lang.constant.ConstantDescs.INIT_NAME;
+import static java.lang.constant.ConstantDescs.MTD_void;
 
 import java.lang.classfile.ClassFile;
 import java.lang.classfile.Label;
@@ -135,29 +137,27 @@ public class DeoptimizeOnExceptionTest extends GraalCompilerTest implements Cust
         return ClassFile.of().build(ClassDesc.of(className), classBuilder -> classBuilder
                         .withVersion(JAVA_5_VERSION, 0)
                         .withInterfaceSymbols(cd(Runnable.class))
-                        .withMethod("<init>", MD_VOID, ACC_PUBLIC, methodBuilder -> methodBuilder
-                                        .withCode(codeBuilder -> codeBuilder
-                                                        .aload(0)
-                                                        .invokespecial(CD_Object, "<init>", MD_VOID)
-                                                        .return_()))
-                        .withMethod("run", MD_VOID, ACC_PUBLIC, methodBuilder -> methodBuilder
-                                        .withCode(codeBuilder -> {
-                                            Label l1 = codeBuilder.newLabel();
-                                            codeBuilder
-                                                            .invokestatic(outerClass, "getM", MethodTypeDesc.of(CD_Object))
-                                                            .with(JsrInstruction.of(l1))
-                                                            .return_()
-                                                            .labelBinding(l1)
-                                                            .astore(1)
-                                                            .invokestatic(cd(System.class), "currentTimeMillis", MethodTypeDesc.of(CD_long))
-                                                            .pop2()
-                                                            .invokestatic(outerClass, "getM", MethodTypeDesc.of(CD_Object))
-                                                            .dup()
-                                                            .ifThenElse(Opcode.IFNONNULL,
-                                                                            b -> b.invokestatic(outerClass, "methodA", MD_VOID),
-                                                                            b -> b.invokestatic(outerClass, "methodB", MD_VOID))
-                                                            .with(RetInstruction.of(1));
-                                        })));
+                        .withMethodBody(INIT_NAME, MTD_void, ACC_PUBLIC, b -> b
+                                        .aload(0)
+                                        .invokespecial(CD_Object, INIT_NAME, MTD_void)
+                                        .return_())
+                        .withMethodBody("run", MTD_void, ACC_PUBLIC, b -> {
+                            Label l1 = b.newLabel();
+                            b
+                                            .invokestatic(outerClass, "getM", MethodTypeDesc.of(CD_Object))
+                                            .with(JsrInstruction.of(l1))
+                                            .return_()
+                                            .labelBinding(l1)
+                                            .astore(1)
+                                            .invokestatic(cd(System.class), "currentTimeMillis", MethodTypeDesc.of(CD_long))
+                                            .pop2()
+                                            .invokestatic(outerClass, "getM", MethodTypeDesc.of(CD_Object))
+                                            .dup()
+                                            .ifThenElse(Opcode.IFNONNULL,
+                                                            thenBlock -> thenBlock.invokestatic(outerClass, "methodA", MTD_void),
+                                                            elseBlock -> elseBlock.invokestatic(outerClass, "methodB", MTD_void))
+                                            .with(RetInstruction.of(1));
+                        }));
     }
 
     @Test

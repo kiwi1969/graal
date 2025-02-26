@@ -26,12 +26,10 @@ package jdk.graal.compiler.core.test;
 
 import static java.lang.classfile.ClassFile.ACC_PUBLIC;
 import static java.lang.classfile.ClassFile.ACC_STATIC;
-import static java.lang.constant.ConstantDescs.CD_void;
 
 import java.io.File;
 import java.io.IOException;
 import java.lang.constant.ClassDesc;
-import java.lang.constant.MethodTypeDesc;
 import java.nio.file.Files;
 import java.util.function.Function;
 
@@ -92,8 +90,6 @@ public interface CustomizedBytecodePattern {
             }
         }
     }
-
-    MethodTypeDesc MD_VOID = MethodTypeDesc.of(CD_void);
 
     int ACC_PUBLIC_STATIC = ACC_PUBLIC | ACC_STATIC;
 

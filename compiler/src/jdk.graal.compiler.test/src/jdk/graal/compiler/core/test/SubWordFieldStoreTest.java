@@ -106,10 +106,10 @@ public class SubWordFieldStoreTest extends GraalCompilerTest implements Customiz
 
     static String getUnsafePutMethodName(TypeKind kind) {
         String name = kind.name();
-        return name.substring(0, 1) + name.substring(1).toLowerCase();
+        return name.charAt(0) + name.substring(1).toLowerCase();
     }
 
-    private void generateSnippet(CodeBuilder builder, ClassDesc thisClass) {
+    private void generateSnippet(CodeBuilder b, ClassDesc thisClass) {
         ClassDesc targetType = kind.upperBound();
 
         ClassDesc classField = cd(Field.class);
@@ -119,7 +119,8 @@ public class SubWordFieldStoreTest extends GraalCompilerTest implements Customiz
         FieldRefEntry unsafeField = ConstantPoolBuilder.of().fieldRefEntry(classGraalTest, "UNSAFE", classUnsafe);
 
         if (unsafeStore | unsafeLoad) {
-            builder.ldc(thisClass)
+            b
+                            .ldc(thisClass)
                             .ldc(FIELD)
                             .invokevirtual(CD_Class, "getField", MethodTypeDesc.of(classField, CD_String))
                             .astore(0)
@@ -134,26 +135,28 @@ public class SubWordFieldStoreTest extends GraalCompilerTest implements Customiz
         }
 
         if (unsafeStore) {
-            builder.getstatic(unsafeField)
+            b.getstatic(unsafeField)
                             .aload(1)
                             .lload(2)
                             .ldc(value)
                             .invokevirtual(classUnsafe, "put" + getUnsafePutMethodName(kind), MethodTypeDesc.of(CD_void, CD_Object, CD_long, targetType));
         } else {
-            builder.ldc(value)
+            b.ldc(value)
                             .putstatic(thisClass, FIELD, targetType);
         }
         if (unsafeLoad) {
-            builder.getstatic(unsafeField)
+            b.getstatic(unsafeField)
                             .aload(1)
                             .lload(2)
                             .invokevirtual(classUnsafe, "get" + getUnsafePutMethodName(kind), MethodTypeDesc.of(targetType, CD_Object, CD_long));
         } else {
-            builder.getstatic(thisClass, FIELD, targetType);
+            b.getstatic(thisClass, FIELD, targetType);
         }
 
-        builder.ldc(value)
+        b.ldc(value)
                         .conversion(TypeKind.INT, kind)
-                        .ifThenElse(Opcode.IF_ICMPNE, b -> b.iconst_1().ireturn(), b -> b.iconst_0().ireturn());
+                        .ifThenElse(Opcode.IF_ICMPNE,
+                                        thenBlock -> thenBlock.iconst_1().ireturn(),
+                                        elseBlock -> elseBlock.iconst_0().ireturn());
     }
 }

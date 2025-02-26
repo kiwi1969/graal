@@ -29,6 +29,7 @@ import static java.lang.classfile.ClassFile.ACC_PUBLIC;
 import static java.lang.classfile.ClassFile.ACC_STATIC;
 import static java.lang.constant.ConstantDescs.CD_boolean;
 import static java.lang.constant.ConstantDescs.CD_int;
+import static java.lang.constant.ConstantDescs.MTD_void;
 
 import java.lang.classfile.ClassFile;
 import java.lang.classfile.Label;
@@ -579,73 +580,72 @@ public class SwitchFoldingTest extends GraalCompilerTest implements CustomizedBy
          * Optimization should coalesce branches [5, 7] and  [3, 6, 9]
          */
         return ClassFile.of().build(ClassDesc.of(className), classBuilder -> classBuilder
-                        .withMethod("m", MethodTypeDesc.of(CD_int, CD_boolean, CD_int), ACC_STATIC | ACC_PUBLIC, methodBuilder -> methodBuilder
-                                        .withCode(codeBuilder -> {
-                                            Label outMerge = codeBuilder.newLabel();
-                                            Label inMerge = codeBuilder.newLabel();
-                                            Label commonTarget = codeBuilder.newLabel();
-                                            Label def = codeBuilder.newLabel();
+                        .withMethodBody("m", MethodTypeDesc.of(CD_int, CD_boolean, CD_int), ACC_STATIC | ACC_PUBLIC, b -> {
+                            Label outMerge = b.newLabel();
+                            Label inMerge = b.newLabel();
+                            Label commonTarget = b.newLabel();
+                            Label def = b.newLabel();
 
-                                            Label[] inMerges = new Label[3];
-                                            Label[] outMerges = new Label[2];
-                                            Label[] simple = new Label[2];
+                            Label[] inMerges = new Label[3];
+                            Label[] outMerges = new Label[2];
+                            Label[] simple = new Label[2];
 
-                                            for (int i = 0; i < inMerges.length; i++) {
-                                                inMerges[i] = codeBuilder.newLabel();
-                                            }
-                                            for (int i = 0; i < simple.length; i++) {
-                                                simple[i] = codeBuilder.newLabel();
-                                            }
-                                            for (int i = 0; i < outMerges.length; i++) {
-                                                outMerges[i] = codeBuilder.newLabel();
-                                            }
+                            for (int i = 0; i < inMerges.length; i++) {
+                                inMerges[i] = b.newLabel();
+                            }
+                            for (int i = 0; i < simple.length; i++) {
+                                simple[i] = b.newLabel();
+                            }
+                            for (int i = 0; i < outMerges.length; i++) {
+                                outMerges[i] = b.newLabel();
+                            }
 
-                                            int in = 0;
-                                            int out = 0;
-                                            int s = 0;
+                            int in = 0;
+                            int out = 0;
+                            int s = 0;
 
-                                            List<SwitchCase> cases = new ArrayList<>();
-                                            cases.add(SwitchCase.of(0, commonTarget));
-                                            cases.add(SwitchCase.of(1, simple[s++]));
-                                            cases.add(SwitchCase.of(2, simple[s++]));
-                                            cases.add(SwitchCase.of(3, inMerges[in++]));
-                                            cases.add(SwitchCase.of(4, commonTarget));
-                                            cases.add(SwitchCase.of(5, outMerges[out++]));
-                                            cases.add(SwitchCase.of(6, inMerges[in++]));
-                                            cases.add(SwitchCase.of(7, outMerges[out++]));
-                                            cases.add(SwitchCase.of(8, commonTarget));
-                                            cases.add(SwitchCase.of(9, inMerges[in++]));
+                            List<SwitchCase> cases = new ArrayList<>();
+                            cases.add(SwitchCase.of(0, commonTarget));
+                            cases.add(SwitchCase.of(1, simple[s++]));
+                            cases.add(SwitchCase.of(2, simple[s++]));
+                            cases.add(SwitchCase.of(3, inMerges[in++]));
+                            cases.add(SwitchCase.of(4, commonTarget));
+                            cases.add(SwitchCase.of(5, outMerges[out++]));
+                            cases.add(SwitchCase.of(6, inMerges[in++]));
+                            cases.add(SwitchCase.of(7, outMerges[out++]));
+                            cases.add(SwitchCase.of(8, commonTarget));
+                            cases.add(SwitchCase.of(9, inMerges[in++]));
 
-                                            codeBuilder
-                                                            .iload(0)
-                                                            .iflt(outMerge)
-                                                            .iload(1)
-                                                            .lookupswitch(def, cases);
+                            b
+                                            .iload(0)
+                                            .iflt(outMerge)
+                                            .iload(1)
+                                            .lookupswitch(def, cases);
 
-                                            for (int i = 0; i < inMerges.length; i++) {
-                                                codeBuilder.labelBinding(inMerges[i]).goto_(inMerge);
-                                            }
+                            for (int i = 0; i < inMerges.length; i++) {
+                                b.labelBinding(inMerges[i]).goto_(inMerge);
+                            }
 
-                                            for (int i = 0; i < outMerges.length; i++) {
-                                                codeBuilder.labelBinding(outMerges[i]).goto_(outMerge);
-                                            }
-                                            for (int i = 0; i < simple.length; i++) {
-                                                codeBuilder.labelBinding(simple[i]).sipush(i).ireturn();
-                                            }
+                            for (int i = 0; i < outMerges.length; i++) {
+                                b.labelBinding(outMerges[i]).goto_(outMerge);
+                            }
+                            for (int i = 0; i < simple.length; i++) {
+                                b.labelBinding(simple[i]).sipush(i).ireturn();
+                            }
 
-                                            codeBuilder.labelBinding(def)
-                                                            .iconst_1()
-                                                            .ireturn()
-                                                            .labelBinding(inMerge)
-                                                            .iconst_5()
-                                                            .ireturn()
-                                                            .labelBinding(commonTarget)
-                                                            .goto_(inMerge)
-                                                            .labelBinding(outMerge)
-                                                            .invokestatic(cd(GraalDirectives.class), "deoptimize", MD_VOID)
-                                                            .iconst_m1()
-                                                            .ireturn();
-                                        })));
+                            b.labelBinding(def)
+                                            .iconst_1()
+                                            .ireturn()
+                                            .labelBinding(inMerge)
+                                            .iconst_5()
+                                            .ireturn()
+                                            .labelBinding(commonTarget)
+                                            .goto_(inMerge)
+                                            .labelBinding(outMerge)
+                                            .invokestatic(cd(GraalDirectives.class), "deoptimize", MTD_void)
+                                            .iconst_m1()
+                                            .ireturn();
+                        }));
     }
 
     /**

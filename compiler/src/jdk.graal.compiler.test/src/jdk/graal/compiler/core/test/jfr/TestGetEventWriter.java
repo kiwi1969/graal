@@ -25,6 +25,8 @@
 package jdk.graal.compiler.core.test.jfr;
 
 import static java.lang.classfile.ClassFile.ACC_PUBLIC;
+import static java.lang.constant.ConstantDescs.INIT_NAME;
+import static java.lang.constant.ConstantDescs.MTD_void;
 
 import java.io.IOException;
 import java.lang.classfile.Annotation;
@@ -242,26 +244,23 @@ public class TestGetEventWriter extends SubprocessTest {
                 classBuilder
                                 .withSuperclass(superClass)
                                 .withInterfaceSymbols(cd(Runnable.class))
-                                .withMethod("<init>", MD_VOID, ACC_PUBLIC, methodBuilder -> methodBuilder
-                                                .withCode(codeBuilder -> codeBuilder
-                                                                .aload(0)
-                                                                .invokespecial(superClass, "<init>", MD_VOID)
-                                                                .return_()))
-                                .withMethod(commitName, MD_VOID, isStatic ? ACC_PUBLIC_STATIC : ACC_PUBLIC, methodBuilder -> methodBuilder
-                                                .withCode(codeBuilder -> codeBuilder
-                                                                .invokestatic(ClassDesc.of("jdk.jfr.internal.event.EventWriter"), "getEventWriter",
-                                                                                MethodTypeDesc.of(ClassDesc.of("jdk.jfr.internal.event.EventWriter")))
-                                                                .pop()
-                                                                .return_()))
-                                .withMethod("run", MD_VOID, ACC_PUBLIC, methodBuilder -> methodBuilder
-                                                .withCode(codeBuilder -> {
-                                                    if (isStatic) {
-                                                        codeBuilder.invokestatic(thisClass, commitName, MD_VOID);
-                                                    } else {
-                                                        codeBuilder.aload(0).invokevirtual(thisClass, commitName, MD_VOID);
-                                                    }
-                                                    codeBuilder.return_();
-                                                }));
+                                .withMethodBody(INIT_NAME, MTD_void, ACC_PUBLIC, b -> b
+                                                .aload(0)
+                                                .invokespecial(superClass, INIT_NAME, MTD_void)
+                                                .return_())
+                                .withMethodBody(commitName, MTD_void, isStatic ? ACC_PUBLIC_STATIC : ACC_PUBLIC, b -> b
+                                                .invokestatic(ClassDesc.of("jdk.jfr.internal.event.EventWriter"), "getEventWriter",
+                                                                MethodTypeDesc.of(ClassDesc.of("jdk.jfr.internal.event.EventWriter")))
+                                                .pop()
+                                                .return_())
+                                .withMethodBody("run", MTD_void, ACC_PUBLIC, b -> {
+                                    if (isStatic) {
+                                        b.invokestatic(thisClass, commitName, MTD_void);
+                                    } else {
+                                        b.aload(0).invokevirtual(thisClass, commitName, MTD_void);
+                                    }
+                                    b.return_();
+                                });
             });
         }
     }

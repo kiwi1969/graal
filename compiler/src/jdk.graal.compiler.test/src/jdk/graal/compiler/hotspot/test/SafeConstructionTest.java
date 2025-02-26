@@ -29,7 +29,8 @@ import static java.lang.classfile.ClassFile.ACC_PUBLIC;
 import static java.lang.constant.ConstantDescs.CD_int;
 import static java.lang.constant.ConstantDescs.CD_short;
 import static java.lang.constant.ConstantDescs.CD_void;
-import static jdk.graal.compiler.core.test.CustomizedBytecodePattern.MD_VOID;
+import static java.lang.constant.ConstantDescs.INIT_NAME;
+import static java.lang.constant.ConstantDescs.MTD_void;
 
 import java.io.IOException;
 import java.lang.classfile.Annotation;
@@ -126,27 +127,24 @@ public class SafeConstructionTest extends SubprocessTest {
                         .withField("b", CD_int, fieldBuilder -> fieldBuilder
                                         .withFlags(ACC_PRIVATE)
                                         .with(RuntimeVisibleAnnotationsAttribute.of(Annotation.of(ClassDesc.of("jdk.internal.vm.annotation.Stable")))))
-                        .withMethod("<init>", MD_VOID, ACC_PUBLIC, methodBuilder -> methodBuilder
-                                        .withCode(codeBuilder -> codeBuilder
-                                                        .aload(0)
-                                                        .iconst_4()
-                                                        .putfield(thisClass, "a", CD_int)
-                                                        .return_()))
-                        .withMethod("<init>", MethodTypeDesc.of(CD_void, CD_int), ACC_PUBLIC, methodBuilder -> methodBuilder
-                                        .withCode(codeBuilder -> codeBuilder
-                                                        .aload(0)
-                                                        .iload(1)
-                                                        .putfield(thisClass, "b", CD_int)
-                                                        .return_()))
-                        .withMethod("<init>", MethodTypeDesc.of(CD_void, CD_short), ACC_PUBLIC, methodBuilder -> methodBuilder
-                                        .withCode(codeBuilder -> codeBuilder
-                                                        .aload(0)
-                                                        .dup()
-                                                        .iconst_0()
-                                                        .putfield(thisClass, "b", CD_int)
-                                                        .iload(1)
-                                                        .putfield(thisClass, "a", CD_int)
-                                                        .return_())));
+                        .withMethodBody(INIT_NAME, MTD_void, ACC_PUBLIC, b -> b
+                                        .aload(0)
+                                        .iconst_4()
+                                        .putfield(thisClass, "a", CD_int)
+                                        .return_())
+                        .withMethodBody(INIT_NAME, MethodTypeDesc.of(CD_void, CD_int), ACC_PUBLIC, b -> b
+                                        .aload(0)
+                                        .iload(1)
+                                        .putfield(thisClass, "b", CD_int)
+                                        .return_())
+                        .withMethodBody(INIT_NAME, MethodTypeDesc.of(CD_void, CD_short), ACC_PUBLIC, b -> b
+                                        .aload(0)
+                                        .dup()
+                                        .iconst_0()
+                                        .putfield(thisClass, "b", CD_int)
+                                        .iload(1)
+                                        .putfield(thisClass, "a", CD_int)
+                                        .return_()));
 
         MethodHandles.Lookup lookup = MethodHandles.privateLookupIn(String.class, MethodHandles.lookup());
         return lookup.defineClass(clazz);

@@ -88,16 +88,16 @@ public class SubWordInputTest extends GraalCompilerTest implements CustomizedByt
         MethodTypeDesc getMethodTypeDesc = MethodTypeDesc.of(targetType, targetType);
 
         return ClassFile.of().build(thisClass, classBuilder -> classBuilder
-                        .withMethod(GET, getMethodTypeDesc, ACC_PUBLIC_STATIC, methodBuilder -> methodBuilder
-                                        .withCode(codeBuilder -> codeBuilder
-                                                        .iload(0)
-                                                        .ireturn()))
-                        .withMethod(WRAPPER, MethodTypeDesc.of(CD_boolean, CD_int), ACC_PUBLIC_STATIC, methodBuilder -> methodBuilder
-                                        .withCode(codeBuilder -> codeBuilder
-                                                        .iload(0)
-                                                        .invokestatic(thisClass, GET, getMethodTypeDesc)
-                                                        .iload(0)
-                                                        .conversion(TypeKind.INT, kind)
-                                                        .ifThenElse(Opcode.IF_ICMPNE, b -> b.iconst_1().ireturn(), b -> b.iconst_0().ireturn()))));
+                        .withMethodBody(GET, getMethodTypeDesc, ACC_PUBLIC_STATIC, b -> b
+                                        .iload(0)
+                                        .ireturn())
+                        .withMethodBody(WRAPPER, MethodTypeDesc.of(CD_boolean, CD_int), ACC_PUBLIC_STATIC, b -> b
+                                        .iload(0)
+                                        .invokestatic(thisClass, GET, getMethodTypeDesc)
+                                        .iload(0)
+                                        .conversion(TypeKind.INT, kind)
+                                        .ifThenElse(Opcode.IF_ICMPNE,
+                                                        thenBlock -> thenBlock.iconst_1().ireturn(),
+                                                        elseBlock -> elseBlock.iconst_0().ireturn())));
     }
 }

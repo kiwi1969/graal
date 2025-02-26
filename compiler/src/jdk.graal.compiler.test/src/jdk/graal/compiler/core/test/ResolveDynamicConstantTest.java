@@ -82,39 +82,36 @@ public class ResolveDynamicConstantTest extends GraalCompilerTest {
 
             return ClassFile.of().build(thisClass, classBuilder -> classBuilder
                             .withField("bsmInvocationCount", CD_int, ACC_PUBLIC_STATIC)
-                            .withMethod("main", MethodTypeDesc.of(CD_void, CD_String.arrayType()), ACC_PUBLIC_STATIC, methodBuilder -> methodBuilder
-                                            .withCode(codeBuilder -> codeBuilder
-                                                            .getstatic(cd(System.class), "out", cd(PrintStream.class))
-                                                            .invokestatic(thisClass, "run", MethodTypeDesc.of(CD_boolean))
-                                                            .invokevirtual(cd(PrintStream.class), "println", MethodTypeDesc.of(CD_void, CD_boolean))
-                                                            .return_()))
-                            .withMethod("run", MethodTypeDesc.of(CD_boolean), ACC_PUBLIC_STATIC, methodBuilder -> methodBuilder
-                                            .withCode(codeBuilder -> {
-                                                Label labelFalse = codeBuilder.newLabel();
-                                                var iconst = DynamicConstantDesc.ofNamed(MethodHandleDesc.of(Kind.STATIC, thisClass, "getConstant",
-                                                                "(Ljava/lang/invoke/MethodHandles$Lookup;[Ljava/lang/Object;)I"), "constantdynamic", CD_int);
+                            .withMethodBody("main", MethodTypeDesc.of(CD_void, CD_String.arrayType()), ACC_PUBLIC_STATIC, b -> b
+                                            .getstatic(cd(System.class), "out", cd(PrintStream.class))
+                                            .invokestatic(thisClass, "run", MethodTypeDesc.of(CD_boolean))
+                                            .invokevirtual(cd(PrintStream.class), "println", MethodTypeDesc.of(CD_void, CD_boolean))
+                                            .return_())
+                            .withMethodBody("run", MethodTypeDesc.of(CD_boolean), ACC_PUBLIC_STATIC, b -> {
+                                Label labelFalse = b.newLabel();
+                                var iconst = DynamicConstantDesc.ofNamed(MethodHandleDesc.of(Kind.STATIC, thisClass, "getConstant",
+                                                "(Ljava/lang/invoke/MethodHandles$Lookup;[Ljava/lang/Object;)I"), "constantdynamic", CD_int);
 
-                                                codeBuilder
-                                                                .getstatic(field)
-                                                                .ifne(labelFalse)
-                                                                .ldc(iconst)
-                                                                .pop()
-                                                                .getstatic(field)
-                                                                .ifeq(labelFalse)
-                                                                .iconst_1()
-                                                                .ireturn()
-                                                                .labelBinding(labelFalse)
-                                                                .iconst_0()
-                                                                .ireturn();
-                                            }))
-                            .withMethod("getConstant", MethodTypeDesc.of(CD_int, CD_MethodHandles_Lookup, CD_Object.arrayType()), ACC_PUBLIC_STATIC | ACC_VARARGS, methodBuilder -> methodBuilder
-                                            .withCode(codeBuilder -> codeBuilder
-                                                            .getstatic(field)
-                                                            .iconst_1()
-                                                            .iadd()
-                                                            .putstatic(field)
-                                                            .iconst_1()
-                                                            .ireturn())));
+                                b
+                                                .getstatic(field)
+                                                .ifne(labelFalse)
+                                                .ldc(iconst)
+                                                .pop()
+                                                .getstatic(field)
+                                                .ifeq(labelFalse)
+                                                .iconst_1()
+                                                .ireturn()
+                                                .labelBinding(labelFalse)
+                                                .iconst_0()
+                                                .ireturn();
+                            })
+                            .withMethodBody("getConstant", MethodTypeDesc.of(CD_int, CD_MethodHandles_Lookup, CD_Object.arrayType()), ACC_PUBLIC_STATIC | ACC_VARARGS, b -> b
+                                            .getstatic(field)
+                                            .iconst_1()
+                                            .iadd()
+                                            .putstatic(field)
+                                            .iconst_1()
+                                            .ireturn()));
         }
     }
 
@@ -126,47 +123,42 @@ public class ResolveDynamicConstantTest extends GraalCompilerTest {
 
             return ClassFile.of().build(thisClass, classBuilder -> classBuilder
                             .withField("staticBSMInvocationCount", CD_int, ACC_PUBLIC_STATIC)
-                            .withMethod("main", MethodTypeDesc.of(CD_void, CD_String.arrayType()), ACC_PUBLIC_STATIC, methodBuilder -> methodBuilder
-                                            .withCode(codeBuilder -> codeBuilder
-                                                            .getstatic(cd(System.class), "out", cd(PrintStream.class))
-                                                            .invokestatic(thisClass, "run", MethodTypeDesc.of(CD_boolean))
-                                                            .invokevirtual(cd(PrintStream.class), "println", MethodTypeDesc.of(CD_void, CD_boolean))
-                                                            .return_()))
-                            .withMethod("run", MethodTypeDesc.of(CD_boolean), ACC_PUBLIC_STATIC, methodBuilder -> methodBuilder
-                                            .withCode(codeBuilder -> {
-                                                Label labelFalse = codeBuilder.newLabel();
-                                                var dconst = DynamicConstantDesc.ofNamed(MethodHandleDesc.of(Kind.STATIC, thisClass, "getStaticConstant",
-                                                                "(Ljava/lang/invoke/MethodHandles$Lookup;[Ljava/lang/Object;)D"), "constantdynamic", CD_double);
-                                                var iconst = DynamicConstantDesc.of(MethodHandleDesc.of(Kind.STATIC, thisClass, "getConstant",
-                                                                "(Ljava/lang/invoke/MethodHandles$Lookup;[Ljava/lang/Object;)I"), "constantdynamic", CD_int, dconst);
+                            .withMethodBody("main", MethodTypeDesc.of(CD_void, CD_String.arrayType()), ACC_PUBLIC_STATIC, b -> b
+                                            .getstatic(cd(System.class), "out", cd(PrintStream.class))
+                                            .invokestatic(thisClass, "run", MethodTypeDesc.of(CD_boolean))
+                                            .invokevirtual(cd(PrintStream.class), "println", MethodTypeDesc.of(CD_void, CD_boolean))
+                                            .return_())
+                            .withMethodBody("run", MethodTypeDesc.of(CD_boolean), ACC_PUBLIC_STATIC, b -> {
+                                Label labelFalse = b.newLabel();
+                                var dconst = DynamicConstantDesc.ofNamed(MethodHandleDesc.of(Kind.STATIC, thisClass, "getStaticConstant",
+                                                "(Ljava/lang/invoke/MethodHandles$Lookup;[Ljava/lang/Object;)D"), "constantdynamic", CD_double);
+                                var iconst = DynamicConstantDesc.of(MethodHandleDesc.of(Kind.STATIC, thisClass, "getConstant",
+                                                "(Ljava/lang/invoke/MethodHandles$Lookup;[Ljava/lang/Object;)I"), "constantdynamic", CD_int, dconst);
 
-                                                codeBuilder
-                                                                .getstatic(field)
-                                                                .ifne(labelFalse)
-                                                                .ldc(iconst)
-                                                                .pop()
-                                                                .getstatic(field)
-                                                                .ldc(1)
-                                                                .if_icmpne(labelFalse)
-                                                                .iconst_1()
-                                                                .ireturn()
-                                                                .labelBinding(labelFalse)
-                                                                .iconst_0()
-                                                                .ireturn();
-                                            }))
-                            .withMethod("getConstant", MethodTypeDesc.of(CD_int, CD_MethodHandles_Lookup, CD_Object.arrayType()), ACC_PUBLIC_STATIC | ACC_VARARGS, methodBuilder -> methodBuilder
-                                            .withCode(codeBuilder -> codeBuilder
-                                                            .iconst_1()
-                                                            .ireturn()))
-                            .withMethod("getStaticConstant", MethodTypeDesc.of(CD_double, CD_MethodHandles_Lookup, CD_Object.arrayType()), ACC_PUBLIC_STATIC | ACC_VARARGS,
-                                            methodBuilder -> methodBuilder
-                                                            .withCode(codeBuilder -> codeBuilder
-                                                                            .getstatic(field)
-                                                                            .iconst_1()
-                                                                            .iadd()
-                                                                            .putstatic(field)
-                                                                            .dconst_1()
-                                                                            .dreturn())));
+                                b
+                                                .getstatic(field)
+                                                .ifne(labelFalse)
+                                                .ldc(iconst)
+                                                .pop()
+                                                .getstatic(field)
+                                                .ldc(1)
+                                                .if_icmpne(labelFalse)
+                                                .iconst_1()
+                                                .ireturn()
+                                                .labelBinding(labelFalse)
+                                                .iconst_0()
+                                                .ireturn();
+                            })
+                            .withMethodBody("getConstant", MethodTypeDesc.of(CD_int, CD_MethodHandles_Lookup, CD_Object.arrayType()), ACC_PUBLIC_STATIC | ACC_VARARGS, b -> b
+                                            .iconst_1()
+                                            .ireturn())
+                            .withMethodBody("getStaticConstant", MethodTypeDesc.of(CD_double, CD_MethodHandles_Lookup, CD_Object.arrayType()), ACC_PUBLIC_STATIC | ACC_VARARGS, b -> b
+                                            .getstatic(field)
+                                            .iconst_1()
+                                            .iadd()
+                                            .putstatic(field)
+                                            .dconst_1()
+                                            .dreturn()));
         }
     }
 

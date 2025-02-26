@@ -28,6 +28,8 @@ import static java.lang.classfile.ClassFile.ACC_PRIVATE;
 import static java.lang.classfile.ClassFile.ACC_PUBLIC;
 import static java.lang.constant.ConstantDescs.CD_Object;
 import static java.lang.constant.ConstantDescs.CD_int;
+import static java.lang.constant.ConstantDescs.INIT_NAME;
+import static java.lang.constant.ConstantDescs.MTD_void;
 
 import java.lang.classfile.ClassFile;
 import java.lang.constant.ClassDesc;
@@ -146,18 +148,15 @@ public final class InterfaceMethodHandleTest extends GraalCompilerTest implement
     public byte[] generateClass(String className) {
         return ClassFile.of().build(ClassDesc.of(className), classBuilder -> classBuilder
                         .withInterfaceSymbols(cd(I.class))
-                        .withMethod("<init>", MD_VOID, ACC_PUBLIC, methodBuilder -> methodBuilder
-                                        .withCode(codeBuilder -> codeBuilder
-                                                        .aload(0)
-                                                        .invokespecial(CD_Object, "<init>", MD_VOID)
-                                                        .return_()))
-                        .withMethod("m", MethodTypeDesc.of(CD_int), ACC_PRIVATE, methodBuilder -> methodBuilder
-                                        .withCode(codeBuilder -> codeBuilder
-                                                        .iconst_0()
-                                                        .ireturn()))
-                        .withMethod("m2", MethodTypeDesc.of(CD_int, CD_int, CD_int, CD_int, CD_int, CD_int, CD_int, CD_int, CD_int, CD_int, CD_int), ACC_PRIVATE, methodBuilder -> methodBuilder
-                                        .withCode(codeBuilder -> codeBuilder
-                                                        .iconst_0()
-                                                        .ireturn())));
+                        .withMethodBody(INIT_NAME, MTD_void, ACC_PUBLIC, b -> b
+                                        .aload(0)
+                                        .invokespecial(CD_Object, INIT_NAME, MTD_void)
+                                        .return_())
+                        .withMethodBody("m", MethodTypeDesc.of(CD_int), ACC_PRIVATE, b -> b
+                                        .iconst_0()
+                                        .ireturn())
+                        .withMethodBody("m2", MethodTypeDesc.of(CD_int, CD_int, CD_int, CD_int, CD_int, CD_int, CD_int, CD_int, CD_int, CD_int, CD_int), ACC_PRIVATE, b -> b
+                                        .iconst_0()
+                                        .ireturn()));
     }
 }

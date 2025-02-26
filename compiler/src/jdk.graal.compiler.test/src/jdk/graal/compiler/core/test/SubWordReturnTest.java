@@ -26,6 +26,8 @@ package jdk.graal.compiler.core.test;
 
 import static java.lang.classfile.ClassFile.ACC_STATIC;
 import static java.lang.constant.ConstantDescs.CD_int;
+import static java.lang.constant.ConstantDescs.CLASS_INIT_NAME;
+import static java.lang.constant.ConstantDescs.MTD_void;
 
 import java.lang.classfile.ClassFile;
 import java.lang.classfile.TypeKind;
@@ -102,18 +104,15 @@ public class SubWordReturnTest extends GraalCompilerTest implements CustomizedBy
 
         return ClassFile.of().build(thisClass, classBuilder -> classBuilder
                         .withField(FIELD, CD_int, ACC_PUBLIC_STATIC)
-                        .withMethod("<clinit>", MD_VOID, ACC_STATIC, methodBuilder -> methodBuilder
-                                        .withCode(codeBuilder -> codeBuilder
-                                                        .ldc(value)
-                                                        .putstatic(thisClass, FIELD, CD_int)
-                                                        .return_()))
-                        .withMethod(GET, getMethodTypeDesc, ACC_PUBLIC_STATIC, methodBuilder -> methodBuilder
-                                        .withCode(codeBuilder -> codeBuilder
-                                                        .getstatic(thisClass, FIELD, CD_int)
-                                                        .ireturn()))
-                        .withMethod(WRAPPER, MethodTypeDesc.of(CD_int), ACC_PUBLIC_STATIC, methodBuilder -> methodBuilder
-                                        .withCode(codeBuilder -> codeBuilder
-                                                        .invokestatic(thisClass, GET, getMethodTypeDesc)
-                                                        .ireturn())));
+                        .withMethodBody(CLASS_INIT_NAME, MTD_void, ACC_STATIC, b -> b
+                                        .ldc(value)
+                                        .putstatic(thisClass, FIELD, CD_int)
+                                        .return_())
+                        .withMethodBody(GET, getMethodTypeDesc, ACC_PUBLIC_STATIC, b -> b
+                                        .getstatic(thisClass, FIELD, CD_int)
+                                        .ireturn())
+                        .withMethodBody(WRAPPER, MethodTypeDesc.of(CD_int), ACC_PUBLIC_STATIC, b -> b
+                                        .invokestatic(thisClass, GET, getMethodTypeDesc)
+                                        .ireturn()));
     }
 }

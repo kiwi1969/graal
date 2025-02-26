@@ -105,28 +105,26 @@ public class LargeConstantSectionTest extends JTTTest {
         protected Class<?> findClass(String name) throws ClassNotFoundException {
             if (name.equals(NAME)) {
                 byte[] bytes = ClassFile.of().build(ClassDesc.of(NAME), classBuilder -> classBuilder
-                                .withMethod("run", MethodTypeDesc.of(CD_long, CD_int), ClassFile.ACC_PUBLIC | ClassFile.ACC_STATIC | ClassFile.ACC_FINAL, methodBuilder -> methodBuilder
-                                                .withCode(codeBuilder -> {
-                                                    Label defaultLabel = codeBuilder.newLabel();
-                                                    List<SwitchCase> cases = new ArrayList<>(numberBlocks);
+                                .withMethodBody("run", MethodTypeDesc.of(CD_long, CD_int), ClassFile.ACC_PUBLIC | ClassFile.ACC_STATIC | ClassFile.ACC_FINAL, b -> {
+                                    Label defaultLabel = b.newLabel();
+                                    List<SwitchCase> cases = new ArrayList<>(numberBlocks);
 
-                                                    for (int i = 0; i < cases.size(); i++) {
-                                                        cases.add(SwitchCase.of(i, codeBuilder.newLabel()));
-                                                    }
+                                    for (int i = 0; i < cases.size(); i++) {
+                                        cases.add(SwitchCase.of(i, b.newLabel()));
+                                    }
 
-                                                    codeBuilder.iload(0)
-                                                                    .lookupswitch(defaultLabel, cases);
+                                    b.iload(0).lookupswitch(defaultLabel, cases);
 
-                                                    for (int i = 0; i < cases.size(); i++) {
-                                                        codeBuilder.labelBinding(cases.get(i).target())
-                                                                        .ldc(Long.valueOf(0xF0F0F0F0F0L + i))
-                                                                        .lreturn();
-                                                    }
+                                    for (int i = 0; i < cases.size(); i++) {
+                                        b.labelBinding(cases.get(i).target())
+                                                        .ldc(Long.valueOf(0xF0F0F0F0F0L + i))
+                                                        .lreturn();
+                                    }
 
-                                                    codeBuilder.labelBinding(defaultLabel)
-                                                                    .ldc(Long.valueOf(3L))
-                                                                    .lreturn();
-                                                })));
+                                    b.labelBinding(defaultLabel)
+                                                    .ldc(Long.valueOf(3L))
+                                                    .lreturn();
+                                }));
                 return defineClass(name, bytes, 0, bytes.length);
             } else {
                 return super.findClass(name);

@@ -33,6 +33,7 @@ import static java.lang.constant.ConstantDescs.CD_Float;
 import static java.lang.constant.ConstantDescs.CD_Integer;
 import static java.lang.constant.ConstantDescs.CD_Long;
 import static java.lang.constant.ConstantDescs.CD_Short;
+import static java.lang.constant.ConstantDescs.CLASS_INIT_NAME;
 
 import java.io.IOException;
 import java.lang.classfile.Attributes;
@@ -176,7 +177,7 @@ public class OptionsVerifierTest {
             cm.findAttribute(Attributes.sourceFile()).ifPresent(attr -> sourceFile = attr.sourceFile().stringValue());
 
             for (MethodModel methodModel : cm.methods()) {
-                if ("<clinit>".equals(methodModel.methodName().stringValue())) {
+                if (CLASS_INIT_NAME.equals(methodModel.methodName().stringValue())) {
                     CodeModel code = methodModel.code().orElseThrow();
                     for (CodeElement instruction : code) {
                         switch (instruction) {

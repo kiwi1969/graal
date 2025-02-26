@@ -131,27 +131,26 @@ public class GraphUtilOriginalValueTests extends GraalCompilerTest implements Cu
          */
         // @formatter:on
         return ClassFile.of().build(ClassDesc.of(className), classBuilder -> classBuilder
-                        .withMethod("unbalancedMonitors", MethodTypeDesc.of(CD_void, CD_Object), ACC_PUBLIC_STATIC, methodBuilder -> methodBuilder
-                                        .withCode(codeBuilder -> {
-                                            Label loopHead = codeBuilder.newLabel();
-                                            Label end = codeBuilder.newLabel();
-                                            codeBuilder
-                                                            .aload(0)
-                                                            .monitorenter()
-                                                            .labelBinding(loopHead)
-                                                            .aload(0)
-                                                            .monitorexit()
-                                                            .aload(0)
-                                                            .invokevirtual(CD_Object, "toString", MethodTypeDesc.of(CD_String))
-                                                            .aload(0)
-                                                            .if_acmpeq(end)
-                                                            .aload(0)
-                                                            .invokevirtual(CD_Object, "toString", MethodTypeDesc.of(CD_String))
-                                                            .astore(0)
-                                                            .goto_(loopHead)
-                                                            .labelBinding(end)
-                                                            .return_();
-                                        })));
+                        .withMethodBody("unbalancedMonitors", MethodTypeDesc.of(CD_void, CD_Object), ACC_PUBLIC_STATIC, b -> {
+                            Label loopHead = b.newLabel();
+                            Label end = b.newLabel();
+                            b
+                                            .aload(0)
+                                            .monitorenter()
+                                            .labelBinding(loopHead)
+                                            .aload(0)
+                                            .monitorexit()
+                                            .aload(0)
+                                            .invokevirtual(CD_Object, "toString", MethodTypeDesc.of(CD_String))
+                                            .aload(0)
+                                            .if_acmpeq(end)
+                                            .aload(0)
+                                            .invokevirtual(CD_Object, "toString", MethodTypeDesc.of(CD_String))
+                                            .astore(0)
+                                            .goto_(loopHead)
+                                            .labelBinding(end)
+                                            .return_();
+                        }));
     }
 
     /**

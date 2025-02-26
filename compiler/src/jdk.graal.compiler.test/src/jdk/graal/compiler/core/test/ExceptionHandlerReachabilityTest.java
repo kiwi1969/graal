@@ -100,36 +100,40 @@ public class ExceptionHandlerReachabilityTest extends GraalCompilerTest implemen
         ClassDesc classSharedExceptionHandlerClass = cd(SharedExceptionHandlerClass.class);
 
         return ClassFile.of().build(ClassDesc.of(className), classBuilder -> classBuilder
-                        .withMethod("sharedExceptionHandlerMethod", MethodTypeDesc.of(CD_int, CD_int), ACC_PUBLIC_STATIC, methodBuilder -> methodBuilder
-                                        .withCode(codeBuilder -> {
-                                            Label handlerEx1 = codeBuilder.newLabel();
-                                            codeBuilder
-                                                            .iload(0)
-                                                            .istore(1)
-                                                            .trying(tryBlock -> tryBlock
-                                                                            .iload(1)
-                                                                            .invokestatic(classSharedExceptionHandlerClass, "foo", MethodTypeDesc.of(CD_int, CD_int))
-                                                                            .istore(1),
-                                                                            catchBlock -> catchBlock.catching(cd(IllegalArgumentException.class), b -> b
-                                                                                            .labelBinding(handlerEx1)
-                                                                                            .iload(1)
-                                                                                            .invokestatic(classSharedExceptionHandlerClass, "baz", MethodTypeDesc.of(CD_int, CD_int))
-                                                                                            .istore(1)
-                                                                                            .iload(1)
-                                                                                            .ireturn()))
-                                                            .trying(tryBlock -> tryBlock
-                                                                            .iload(1)
-                                                                            .invokestatic(classSharedExceptionHandlerClass, "bar", MethodTypeDesc.of(CD_int, CD_int))
-                                                                            .istore(1),
-                                                                            catchBlock -> catchBlock.catching(cd(NumberFormatException.class), b -> b
-                                                                                            .iload(1)
-                                                                                            .invokestatic(classSharedExceptionHandlerClass, "doSomething",
-                                                                                                            MethodTypeDesc.of(CD_int, CD_int))
-                                                                                            .istore(1)
-                                                                                            .goto_(handlerEx1)))
-                                                            .iload(1)
-                                                            .ireturn();
-                                        })));
+                        .withMethodBody("sharedExceptionHandlerMethod", MethodTypeDesc.of(CD_int, CD_int), ACC_PUBLIC_STATIC, b -> {
+                            Label handlerEx1 = b.newLabel();
+                            b
+                                            .iload(0)
+                                            .istore(1)
+                                            .trying(tryBlock -> {
+                                                tryBlock
+                                                                .iload(1)
+                                                                .invokestatic(classSharedExceptionHandlerClass, "foo", MethodTypeDesc.of(CD_int, CD_int))
+                                                                .istore(1);
+                                            }, catchBuilder -> catchBuilder.catching(cd(IllegalArgumentException.class), catchBlock -> {
+                                                catchBlock
+                                                                .labelBinding(handlerEx1)
+                                                                .iload(1)
+                                                                .invokestatic(classSharedExceptionHandlerClass, "baz", MethodTypeDesc.of(CD_int, CD_int))
+                                                                .istore(1)
+                                                                .iload(1)
+                                                                .ireturn();
+                                            }))
+                                            .trying(tryBlock -> {
+                                                tryBlock
+                                                                .iload(1)
+                                                                .invokestatic(classSharedExceptionHandlerClass, "bar", MethodTypeDesc.of(CD_int, CD_int))
+                                                                .istore(1);
+                                            }, catchBuilder -> catchBuilder.catching(cd(NumberFormatException.class), catchBlock -> {
+                                                catchBlock
+                                                                .iload(1)
+                                                                .invokestatic(classSharedExceptionHandlerClass, "doSomething", MethodTypeDesc.of(CD_int, CD_int))
+                                                                .istore(1)
+                                                                .goto_(handlerEx1);
+                                            }))
+                                            .iload(1)
+                                            .ireturn();
+                        }));
     }
 
     public class SharedExceptionHandlerClass {

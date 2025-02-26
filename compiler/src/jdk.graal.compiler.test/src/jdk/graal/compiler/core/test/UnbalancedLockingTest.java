@@ -27,6 +27,7 @@ package jdk.graal.compiler.core.test;
 import static java.lang.constant.ConstantDescs.CD_Object;
 import static java.lang.constant.ConstantDescs.CD_int;
 import static java.lang.constant.ConstantDescs.CD_void;
+import static java.lang.constant.ConstantDescs.MTD_void;
 
 import java.lang.classfile.ClassFile;
 import java.lang.classfile.CodeBuilder;
@@ -88,12 +89,9 @@ public class UnbalancedLockingTest extends GraalCompilerTest implements Customiz
         ClassDesc thisClass = ClassDesc.of(internalClassName);
 
         return ClassFile.of().build(thisClass, classBuilder -> classBuilder
-                        .withMethod("test", MD_VOID, ACC_PUBLIC_STATIC, methodBuilder -> methodBuilder
-                                        .withCode(UnbalancedLockingTest::createTestMethod))
-                        .withMethod("snippet", MethodTypeDesc.of(CD_void, CD_int, CD_Object, CD_Object), ACC_PUBLIC_STATIC, methodBuilder -> methodBuilder
-                                        .withCode(UnbalancedLockingTest::createIllegalLockingMethod))
-                        .withMethod("bar", MethodTypeDesc.of(CD_void, CD_int, CD_int, CD_Object, CD_Object), ACC_PUBLIC_STATIC, methodBuilder -> methodBuilder
-                                        .withCode(b -> createIrreducibleMethod(thisClass, b))));
+                        .withMethodBody("test", MTD_void, ACC_PUBLIC_STATIC, UnbalancedLockingTest::createTestMethod)
+                        .withMethodBody("snippet", MethodTypeDesc.of(CD_void, CD_int, CD_Object, CD_Object), ACC_PUBLIC_STATIC, UnbalancedLockingTest::createIllegalLockingMethod)
+                        .withMethodBody("bar", MethodTypeDesc.of(CD_void, CD_int, CD_int, CD_Object, CD_Object), ACC_PUBLIC_STATIC, b -> createIrreducibleMethod(thisClass, b)));
     }
 
     /**
@@ -130,46 +128,48 @@ public class UnbalancedLockingTest extends GraalCompilerTest implements Customiz
      * }
      * </pre>
      */
-    private static void createIrreducibleMethod(ClassDesc thisClass, CodeBuilder codeBuilder) {
-        Label irreducible = codeBuilder.newLabel();
-        Label loopHeader1 = codeBuilder.newLabel();
-        Label loopHeader2 = codeBuilder.newLabel();
+    private static void createIrreducibleMethod(ClassDesc thisClass, CodeBuilder b) {
+        Label irreducible = b.newLabel();
+        Label loopHeader1 = b.newLabel();
+        Label loopHeader2 = b.newLabel();
 
-        codeBuilder
+        b
                         .iload(0)
                         .bipush(12)
                         .ifThenElse(Opcode.IF_ICMPGE,
-                                        b -> b.aload(2).astore(6),
-                                        b -> b.aload(3).astore(6))
+                                        thenBlock -> thenBlock.aload(2).astore(6),
+                                        elseBlock -> elseBlock.aload(3).astore(6))
                         .iconst_0()
                         .istore(3)
                         .iload(0)
                         .iload(1)
                         .ifThenElse(Opcode.IF_ICMPEQ,
-                                        b -> b
+                                        thenBlock -> thenBlock
                                                         .labelBinding(loopHeader1)
                                                         .iload(3)
                                                         .iload(0)
-                                                        .ifThen(Opcode.IF_ICMPLT, b1 -> b1
+                                                        .ifThen(Opcode.IF_ICMPLT, thenBlock1 -> thenBlock1
                                                                         .iinc(3, 1)
-                                                                        .trying(
-                                                                                        bcb -> bcb
-                                                                                                        .aload(6)
-                                                                                                        .monitorenter()
-                                                                                                        .invokestatic(thisClass, "test", MD_VOID)
-                                                                                                        .aload(6)
-                                                                                                        .monitorexit(),
-                                                                                        cb -> cb.catchingAll(bcb -> bcb
-                                                                                                        .aload(6)
-                                                                                                        .monitorexit()
-                                                                                                        .athrow()))
+                                                                        .trying(tryBlock -> {
+                                                                            tryBlock
+                                                                                            .aload(6)
+                                                                                            .monitorenter()
+                                                                                            .invokestatic(thisClass, "test", MTD_void)
+                                                                                            .aload(6)
+                                                                                            .monitorexit();
+                                                                        }, catchBuilder -> catchBuilder.catchingAll(catchBlock -> {
+                                                                            catchBlock
+                                                                                            .aload(6)
+                                                                                            .monitorexit()
+                                                                                            .athrow();
+                                                                        }))
                                                                         .labelBinding(irreducible)
                                                                         .goto_(loopHeader1)),
-                                        b -> b
+                                        elseBlock -> elseBlock
                                                         .labelBinding(loopHeader2)
                                                         .iload(3)
                                                         .iload(0)
-                                                        .ifThen(Opcode.IF_ICMPLT, b1 -> b1
+                                                        .ifThen(Opcode.IF_ICMPLT, thenBlock1 -> thenBlock1
                                                                         .iinc(3, 1)
                                                                         .goto_(loopHeader2))
                                                         .aload(2)
@@ -195,16 +195,16 @@ public class UnbalancedLockingTest extends GraalCompilerTest implements Customiz
      * }
      * </pre>
      */
-    private static void createIllegalLockingMethod(CodeBuilder codeBuilder) {
-        codeBuilder
+    private static void createIllegalLockingMethod(CodeBuilder b) {
+        b
                         .iload(0)
                         .ifThenElse(
-                                        b -> b
+                                        thenBlock -> thenBlock
                                                         .aload(1)
                                                         .astore(3)
                                                         .aload(1)
                                                         .monitorenter(),
-                                        b -> b
+                                        elseBlock -> elseBlock
                                                         .aload(2)
                                                         .astore(3)
                                                         .aload(2)
@@ -222,7 +222,7 @@ public class UnbalancedLockingTest extends GraalCompilerTest implements Customiz
      * }
      * </pre>
      */
-    private static void createTestMethod(CodeBuilder codeBuilder) {
-        codeBuilder.return_();
+    private static void createTestMethod(CodeBuilder b) {
+        b.return_();
     }
 }

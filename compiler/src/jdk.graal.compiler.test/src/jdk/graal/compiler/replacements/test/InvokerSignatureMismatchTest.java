@@ -25,7 +25,6 @@
 package jdk.graal.compiler.replacements.test;
 
 import static java.lang.classfile.ClassFile.ACC_FINAL;
-import static java.lang.classfile.ClassFile.ACC_PUBLIC;
 import static java.lang.classfile.ClassFile.ACC_STATIC;
 import static java.lang.constant.ConstantDescs.CD_Class;
 import static java.lang.constant.ConstantDescs.CD_Exception;
@@ -39,8 +38,9 @@ import static java.lang.constant.ConstantDescs.CD_String;
 import static java.lang.constant.ConstantDescs.CD_float;
 import static java.lang.constant.ConstantDescs.CD_int;
 import static java.lang.constant.ConstantDescs.CD_void;
+import static java.lang.constant.ConstantDescs.CLASS_INIT_NAME;
+import static java.lang.constant.ConstantDescs.MTD_void;
 import static jdk.graal.compiler.core.test.CustomizedBytecodePattern.ACC_PUBLIC_STATIC;
-import static jdk.graal.compiler.core.test.CustomizedBytecodePattern.MD_VOID;
 import static jdk.graal.compiler.test.SubprocessUtil.getVMCommandLine;
 import static jdk.graal.compiler.test.SubprocessUtil.withoutDebuggerArguments;
 
@@ -91,20 +91,20 @@ public class InvokerSignatureMismatchTest extends GraalCompilerTest {
         return ClassFile.of().build(ClassDesc.of("java.lang.invoke.MethodHandleHelper"), classBuilder -> classBuilder
                         .withMethod("internalMemberName", MethodTypeDesc.of(CD_Object, CD_MethodHandle), ACC_PUBLIC_STATIC, methodBuilder -> methodBuilder
                                         .with(ExceptionsAttribute.ofSymbols(CD_Exception))
-                                        .withCode(codeBuilder -> codeBuilder
+                                        .withCode(b -> b
                                                         .aload(0)
                                                         .invokevirtual(CD_MethodHandle, "internalMemberName", MethodTypeDesc.of(ClassDesc.of("java.lang.invoke.MemberName")))
                                                         .areturn()))
                         .withMethod("linkToStatic", MethodTypeDesc.of(CD_int, CD_float, CD_Object), ACC_PUBLIC_STATIC, methodBuilder -> methodBuilder
                                         .with(ExceptionsAttribute.ofSymbols(CD_Exception))
-                                        .withCode(codeBuilder -> codeBuilder
+                                        .withCode(b -> b
                                                         .fload(0)
                                                         .aload(1)
                                                         .invokestatic(CD_MethodHandle, "linkToStatic", MethodTypeDesc.of(CD_int, CD_float, CD_Object))
                                                         .ireturn()))
                         .withMethod("invokeBasicI", MethodTypeDesc.of(CD_int, CD_MethodHandle, CD_float), ACC_PUBLIC_STATIC, methodBuilder -> methodBuilder
                                         .with(ExceptionsAttribute.ofSymbols(CD_Exception))
-                                        .withCode(codeBuilder -> codeBuilder
+                                        .withCode(b -> b
                                                         .aload(0)
                                                         .fload(1)
                                                         .invokevirtual(CD_MethodHandle, "invokeBasic", MethodTypeDesc.of(CD_int, CD_float))
@@ -119,8 +119,8 @@ public class InvokerSignatureMismatchTest extends GraalCompilerTest {
                         .withField("INT_MH", CD_MethodHandle, fieldBuilder -> fieldBuilder
                                         .withFlags(ACC_FINAL | ACC_STATIC)
                                         .with(RuntimeVisibleAnnotationsAttribute.of(Annotation.of(ClassDesc.of("jdk.internal.vm.annotation.Stable")))))
-                        .withMethod("<clinit>", MD_VOID, ACC_STATIC, methodBuilder -> methodBuilder
-                                        .withCode(codeBuilder -> codeBuilder
+                        .withMethod(CLASS_INIT_NAME, MTD_void, ACC_STATIC, methodBuilder -> methodBuilder
+                                        .withCode(b -> b
                                                         .aconst_null()
                                                         .astore(0)
                                                         .invokestatic(CD_MethodHandles, "lookup", MethodTypeDesc.of(CD_MethodHandles_Lookup))
@@ -134,7 +134,7 @@ public class InvokerSignatureMismatchTest extends GraalCompilerTest {
                                                         .return_()))
                         .withMethod("mainLink", MethodTypeDesc.of(CD_int, CD_int), ACC_PUBLIC_STATIC, methodBuilder -> methodBuilder
                                         .with(ExceptionsAttribute.ofSymbols(CD_Exception))
-                                        .withCode(codeBuilder -> codeBuilder
+                                        .withCode(b -> b
                                                         .getstatic(thisClass, "INT_MH", CD_MethodHandle)
                                                         .invokestatic(methodHandleHelper, "internalMemberName", MethodTypeDesc.of(CD_Object, CD_MethodHandle))
                                                         .astore(1)
@@ -145,20 +145,20 @@ public class InvokerSignatureMismatchTest extends GraalCompilerTest {
                                                         .ireturn()))
                         .withMethod("mainInvoke", MethodTypeDesc.of(CD_int, CD_int), ACC_PUBLIC_STATIC, methodBuilder -> methodBuilder
                                         .with(ExceptionsAttribute.ofSymbols(CD_Exception))
-                                        .withCode(codeBuilder -> codeBuilder
+                                        .withCode(b -> b
                                                         .getstatic(thisClass, "INT_MH", CD_MethodHandle)
                                                         .iload(0)
                                                         .i2f()
                                                         .invokestatic(methodHandleHelper, "invokeBasicI", MethodTypeDesc.of(CD_int, CD_MethodHandle, CD_float))
                                                         .ireturn()))
                         .withMethod("bodyI", MethodTypeDesc.of(CD_int, CD_int), ACC_PUBLIC_STATIC, methodBuilder -> methodBuilder
-                                        .withCode(codeBuilder -> codeBuilder
+                                        .withCode(b -> b
                                                         .iload(0)
                                                         .sipush(1023)
                                                         .iand()
                                                         .ireturn()))
                         .withMethod("main", MethodTypeDesc.of(CD_void, CD_String.arrayType()), ACC_PUBLIC_STATIC, methodBuilder -> methodBuilder
-                                        .withCode(codeBuilder -> codeBuilder
+                                        .withCode(b -> b
                                                         .sipush(100)
                                                         .invokestatic(thisClass, "mainLink", MethodTypeDesc.of(CD_int, CD_int))
                                                         .pop()

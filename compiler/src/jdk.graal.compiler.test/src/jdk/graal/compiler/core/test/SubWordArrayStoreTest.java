@@ -29,6 +29,7 @@ import static java.lang.constant.ConstantDescs.CD_Object;
 import static java.lang.constant.ConstantDescs.CD_boolean;
 import static java.lang.constant.ConstantDescs.CD_long;
 import static java.lang.constant.ConstantDescs.CD_void;
+import static java.lang.constant.ConstantDescs.MTD_void;
 import static jdk.graal.compiler.core.test.SubWordFieldStoreTest.getUnsafePutMethodName;
 
 import java.lang.classfile.ClassFile;
@@ -97,31 +98,24 @@ public class SubWordArrayStoreTest extends GraalCompilerTest implements Customiz
 
         return ClassFile.of().build(thisClass, classBuilder -> classBuilder
                         .withField(FIELD, targetType.arrayType(), ACC_PUBLIC_STATIC)
-                        .withMethod("<clinit>", MD_VOID, ACC_STATIC, methodBuilder -> methodBuilder
-                                        .withCode(codeBuilder -> codeBuilder
-                                                        .bipush(16)
-                                                        .newarray(kind)
-                                                        .putstatic(thisClass, FIELD, targetType.arrayType())))
-                        .withMethod(SNIPPET, MethodTypeDesc.of(CD_boolean), ACC_PUBLIC_STATIC, methodBuilder -> methodBuilder
-                                        .withCode(b -> generateSnippet(b, thisClass))));
+                        .withMethodBody("<clinit>", MTD_void, ACC_STATIC, b -> b
+                                        .bipush(16)
+                                        .newarray(kind)
+                                        .putstatic(thisClass, FIELD, targetType.arrayType()))
+                        .withMethodBody(SNIPPET, MethodTypeDesc.of(CD_boolean), ACC_PUBLIC_STATIC, b -> generateSnippet(b, thisClass)));
     }
 
     private static long arrayBaseOffset(TypeKind kind) {
-        switch (kind) {
-            case BOOLEAN:
-                return UNSAFE.arrayBaseOffset(boolean[].class);
-            case BYTE:
-                return UNSAFE.arrayBaseOffset(byte[].class);
-            case SHORT:
-                return UNSAFE.arrayBaseOffset(short[].class);
-            case CHAR:
-                return UNSAFE.arrayBaseOffset(char[].class);
-            default:
-                throw GraalError.shouldNotReachHereUnexpectedValue(kind); // ExcludeFromJacocoGeneratedReport
-        }
+        return switch (kind) {
+            case BOOLEAN -> UNSAFE.arrayBaseOffset(boolean[].class);
+            case BYTE -> UNSAFE.arrayBaseOffset(byte[].class);
+            case SHORT -> UNSAFE.arrayBaseOffset(short[].class);
+            case CHAR -> UNSAFE.arrayBaseOffset(char[].class);
+            default -> throw GraalError.shouldNotReachHereUnexpectedValue(kind);
+        };
     }
 
-    private void generateSnippet(CodeBuilder builder, ClassDesc thisClass) {
+    private void generateSnippet(CodeBuilder b, ClassDesc thisClass) {
         ClassDesc targetType = kind.upperBound();
 
         ClassDesc classGraalTest = cd(GraalTest.class);
@@ -132,41 +126,48 @@ public class SubWordArrayStoreTest extends GraalCompilerTest implements Customiz
         FieldRefEntry arrayField = cpb.fieldRefEntry(thisClass, FIELD, targetType.arrayType());
 
         if (unsafeStore) {
-            builder.getstatic(unsafeField)
+            b
+                            .getstatic(unsafeField)
                             .getstatic(arrayField)
                             .ldc(arrayBaseOffset(kind))
                             .ldc(value)
                             .invokevirtual(classUnsafe, "put" + getUnsafePutMethodName(kind), MethodTypeDesc.of(CD_void, CD_Object, CD_long, targetType));
         } else {
-            builder.getstatic(arrayField)
+            b
+                            .getstatic(arrayField)
                             .iconst_0()
                             .ldc(value);
 
             switch (kind) {
-                case BOOLEAN, BYTE -> builder.bastore();
-                case SHORT -> builder.sastore();
-                case CHAR -> builder.castore();
+                case BOOLEAN, BYTE -> b.bastore();
+                case SHORT -> b.sastore();
+                case CHAR -> b.castore();
             }
         }
 
         if (unsafeLoad) {
-            builder.getstatic(unsafeField)
+            b
+                            .getstatic(unsafeField)
                             .getstatic(arrayField)
                             .ldc(arrayBaseOffset(kind))
                             .invokevirtual(classUnsafe, "get" + getUnsafePutMethodName(kind), MethodTypeDesc.of(targetType, CD_Object, CD_long));
         } else {
-            builder.getstatic(arrayField)
+            b
+                            .getstatic(arrayField)
                             .iconst_0();
 
             switch (kind) {
-                case BOOLEAN, BYTE -> builder.baload();
-                case SHORT -> builder.saload();
-                case CHAR -> builder.caload();
+                case BOOLEAN, BYTE -> b.baload();
+                case SHORT -> b.saload();
+                case CHAR -> b.caload();
             }
         }
 
-        builder.ldc(value)
+        b
+                        .ldc(value)
                         .conversion(TypeKind.INT, kind)
-                        .ifThenElse(Opcode.IF_ICMPNE, b -> b.iconst_1().ireturn(), b -> b.iconst_0().ireturn());
+                        .ifThenElse(Opcode.IF_ICMPNE,
+                                        thenBlock -> thenBlock.iconst_1().ireturn(),
+                                        elseBlock -> elseBlock.iconst_0().ireturn());
     }
 }

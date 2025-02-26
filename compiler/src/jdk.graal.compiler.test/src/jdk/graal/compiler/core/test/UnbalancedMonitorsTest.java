@@ -27,6 +27,8 @@ package jdk.graal.compiler.core.test;
 import static java.lang.classfile.ClassFile.ACC_PUBLIC;
 import static java.lang.constant.ConstantDescs.CD_Object;
 import static java.lang.constant.ConstantDescs.CD_boolean;
+import static java.lang.constant.ConstantDescs.INIT_NAME;
+import static java.lang.constant.ConstantDescs.MTD_void;
 
 import java.lang.classfile.ClassFile;
 import java.lang.classfile.CodeBuilder;
@@ -151,21 +153,15 @@ public class UnbalancedMonitorsTest extends GraalCompilerTest implements Customi
     @Override
     public byte[] generateClass(String className) {
         return ClassFile.of().build(ClassDesc.of(className), classBuilder -> classBuilder
-                        .withMethod("<init>", MD_VOID, ACC_PUBLIC, methodBuilder -> methodBuilder
-                                        .withCode(codeBuilder -> codeBuilder
-                                                        .aload(0)
-                                                        .invokespecial(CD_Object, "<init>", MD_VOID)
-                                                        .return_()))
-                        .withMethod("wrongOrder", MethodTypeDesc.of(CD_Object, CD_Object, CD_Object), ACC_PUBLIC, methodBuilder -> methodBuilder
-                                        .withCode(UnbalancedMonitorsTest::visitWrongOrder))
-                        .withMethod("tooManyExits", MethodTypeDesc.of(CD_boolean, CD_Object, CD_Object), ACC_PUBLIC, methodBuilder -> methodBuilder
-                                        .withCode(b -> visitBlockStructured(b, true, true)))
-                        .withMethod("tooFewExits", MethodTypeDesc.of(CD_boolean, CD_Object, CD_Object), ACC_PUBLIC, methodBuilder -> methodBuilder
-                                        .withCode(b -> visitBlockStructured(b, true, false)))
-                        .withMethod("tooManyExitsExceptional", MethodTypeDesc.of(CD_boolean, CD_Object, CD_Object), ACC_PUBLIC, methodBuilder -> methodBuilder
-                                        .withCode(b -> visitBlockStructured(b, false, true)))
-                        .withMethod("tooFewExitsExceptional", MethodTypeDesc.of(CD_boolean, CD_Object, CD_Object), ACC_PUBLIC, methodBuilder -> methodBuilder
-                                        .withCode(b -> visitBlockStructured(b, false, false))));
+                        .withMethodBody(INIT_NAME, MTD_void, ACC_PUBLIC, b -> b
+                                        .aload(0)
+                                        .invokespecial(CD_Object, INIT_NAME, MTD_void)
+                                        .return_())
+                        .withMethodBody("wrongOrder", MethodTypeDesc.of(CD_Object, CD_Object, CD_Object), ACC_PUBLIC, UnbalancedMonitorsTest::visitWrongOrder)
+                        .withMethodBody("tooManyExits", MethodTypeDesc.of(CD_boolean, CD_Object, CD_Object), ACC_PUBLIC, b -> visitBlockStructured(b, true, true))
+                        .withMethodBody("tooFewExits", MethodTypeDesc.of(CD_boolean, CD_Object, CD_Object), ACC_PUBLIC, b -> visitBlockStructured(b, true, false))
+                        .withMethodBody("tooManyExitsExceptional", MethodTypeDesc.of(CD_boolean, CD_Object, CD_Object), ACC_PUBLIC, b -> visitBlockStructured(b, false, true))
+                        .withMethodBody("tooFewExitsExceptional", MethodTypeDesc.of(CD_boolean, CD_Object, CD_Object), ACC_PUBLIC, b -> visitBlockStructured(b, false, false)));
     }
 
     private static void visitBlockStructured(CodeBuilder b, boolean normalReturnError, boolean tooMany) {
